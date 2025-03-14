@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Bingo Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            font-size: 24px;
+        }
+        .hidden {
+            display: none;
+        }
+        .bingo-card {
+            display: grid;
+            grid-auto-flow: column;
+            grid-template-rows: repeat(5, 1fr);
+            gap: 15px;
+            width: 600px;
+            margin: 20px auto;
+        }
+        .bingo-cell {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid black;
+            text-align: center;
+            font-size: 32px;
+            background-color: rgb(192, 191, 191);
+        }
+        button {
+            font-size: 18px;
+            padding: 10px 20px;
+            margin: 10px;
+        }
+        select {
+            font-size: 24px;
+            padding: 5px;
+        }
+        #mathProblem {
+            font-size: 48px;
+            font-weight: bold;
+        }
+        #equationsSidebar {
+            margin-top: 20px;
+            text-align: left;
+            font-size: 18px;
+            width: 300px;
+            margin: 20px auto;
+            border: 2px solid black;
+            padding: 10px;
+            display: inline-block;
+            max-height: 300px;
+            overflow-y: scroll;
+        }
+        #equationsSidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        #equationsSidebar li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Math Bingo Game</h1>
+    <p id="grade"></p>
+    <br><br>
+    <button id="generateCardButton" onclick="generateBingoCard()">Generate Bingo Card</button>
+    <button id="generateButton" onclick="generateMathProblem()">Generate Math Problem</button>
+    
+    <div id="bingoCard" class="hidden">
+        <h2>Bingo Card</h2>
+        <div class="bingo-card" id="cardGrid"></div>
+    </div>
+    
+    <div id="mathSection" class="hidden">
+        <h2>Math Problem</h2>
+        <p id="mathProblem"></p>
+        <button id="answerButton" class="hidden" onclick="showAnswer()">Show Answer</button>
+    </div>
+
+    <!-- Sidebar to show previous equations -->
+    <div id="equationsSidebar" class="hidden">
+        <h3>Previous Equations</h3>
+        <ul id="equationsList"></ul>
+    </div>
+    
+    <script>
+        let currentProblem = "";
+        let currentAnswer = "";
+        let generatedAnswers = [];  // Array to keep track of generated answers
+        let bingoNumbersUsed = [];  // Array to keep track of used bingo numbers
+        let usedNumbers = [];  // Array to keep track of numbers already displayed for math problems
+
+        function generateBingoCard() {
+            document.getElementById("mathSection").classList.add("hidden");
+            document.getElementById("bingoCard").classList.remove("hidden");
+            let cardGrid = document.getElementById("cardGrid");
+            cardGrid.innerHTML = "";
+            bingoNumbersUsed = [];  // Reset bingo numbers for each new card
+
+            let cardSize = 5;
+
+            // Generate the bingo cells
+            for (let i = 0; i < cardSize * cardSize; i++) {
+                let number = generateUniqueNumber((i < 5 ? 1 : i < 10 ? 31 : i < 15 ? 51 : i < 20 ? 71: 91), (i < 5 ? 30 : i < 10 ? 50 : i < 15 ? 70 : i < 20 ? 90 : 100));
+                let cell = document.createElement("div");
+                cell.className = "bingo-cell";
+                cell.textContent = number;
+                cardGrid.appendChild(cell);
+            }
+            bingoNumbersUsed = [];
+        }
+
+        // Function to generate a unique number that hasn't been used yet
+        function generateUniqueNumber(min, max) {
+            let number;
+            do {
+                number = Math.floor(Math.random() * (max - min + 1)) + min;
+            } while (bingoNumbersUsed.includes(number));  // Ensure number is unique
+            bingoNumbersUsed.push(number);  // Add the number to the used numbers list
+            return number;
+        }
+
+        function generateMathProblem() {
+            document.getElementById("bingoCard").classList.add("hidden");
+            document.getElementById("mathSection").classList.remove("hidden");
+            document.getElementById("answerButton").classList.remove("hidden"); // Show the answer button
+            document.getElementById("equationsSidebar").classList.remove("hidden");
+            
+            // Generate a random number between 1 and 100, ensuring it hasn't been used
+            let num;
+            do {
+                num = Math.floor(Math.random() * 100) + 1;
+            } while (usedNumbers.includes(num));  // Keep generating until a unique number is found
+
+            // Add the generated number to the used numbers array
+            usedNumbers.push(num);
+
+            const gradeRandom = num;
+            let grade = "";
+            if (gradeRandom <= 10) {
+                grade = "kinder";
+            }
+            else if (gradeRandom >= 11 && gradeRandom <= 20) {
+                grade = "1";
+            }
+            else if (gradeRandom >= 21 && gradeRandom <= 30) {
+                grade = "2";
+            }
+            else if (gradeRandom >= 31 && gradeRandom <= 50) {
+                grade = "3";
+            }
+            else if (gradeRandom >= 51 && gradeRandom <= 70) {
+                grade = "4";
+            }
+            else if (gradeRandom >= 71 && gradeRandom <= 90) {
+                grade = "5";
+            }
+            else {
+                grade = "6";
+            }
+
+            // Keep generating problems until we find one with a unique answer
+            let problemData = getMathProblem(grade);
+            while (generatedAnswers.includes(problemData.answer)) {
+                problemData = getMathProblem(grade);  // Regenerate the problem if the answer is already in the array
+            }
+
+            currentProblem = problemData.problem;
+            currentAnswer = problemData.answer;
+
+            // Update the problem and grade display
+            document.getElementById("mathProblem").textContent = `${num}`;
+            document.getElementById("grade").textContent = `Grade Level: ${grade}`;
+
+            // Add the generated number to the sidebar
+            addToSidebar(num);
+        }
+
+        function getMathProblem(grade) {
+            let a, b, c, answer, addOrSub, equation, x;
+            switch (grade) {
+                case "kinder":
+                    a = Math.floor(Math.random() * 10) + 1;
+                    return {
+                        problem: `${getNumberWord(a)} = ?`,
+                        answer: `${a}`
+                    };
+
+                case "1":
+                    answer = Math.floor(Math.random() * 20) + 11;
+                    a = Math.floor(Math.random() * 19) + 1;
+                    b = answer - a;
+                    return { problem: `${a} + ${b}`, answer: `${a + b}` };
+
+                case "2":
+                    answer = Math.floor(Math.random() * 30) + 21;
+                    addOrSub = Math.random() > 0.5 ? "+" : "-";
+                    if (addOrSub === "+") {
+                        a = Math.floor(Math.random() * 29) + 1;
+                        b = answer - a;
+                        return { problem: `${a} + ${b}`, answer: `${a + b}` };
+                    } else {
+                        a = Math.floor(Math.random() * 60) + 16;
+                        b = a + answer;
+                        return { problem: `${a} - ${b}`, answer: `${a - b}` };
+                    }
+
+                case "3":
+                    answer = Math.floor(Math.random() * 50) + 31;
+                    let factors = [];
+                    for (let i = 1; i <= 9; i++) {
+                        if (answer % i === 0 && answer / i <= 9) {
+                            factors.push([i, answer / i]);
+                        }
+                    }
+                    if (factors.length > 0) {
+                        let [a, b] = factors[Math.floor(Math.random() * factors.length)];
+                        return { problem: `${a} × ${b} = ${answer}`, answer: `${a * b}` };
+                    } else {
+                        a = Math.floor(Math.random() * 9) + 1;
+                        b = Math.floor(Math.random() * 9) + 1;
+                        addOrSub = Math.random() > 0.5 ? "+" : "-";
+                        return { problem: `${a} ${addOrSub} ${b}`, answer: `${a + b}` };
+                    }
+
+                case "4":
+                    answer = Math.floor(Math.random() * 20) + 51;
+                    for (let a = 1; a <= 9; a++) {
+                        for (let b = 1; b <= 9; b++) {
+                            if (a * b === answer) {
+                                equation = `${a} × ${b} = ${answer}`;
+                                return { problem: equation, answer: `${a * b}` };
+                            }
+                        }
+                    }
+
+                    for (let a = 1; a <= 9; a++) {
+                        for (let b = 1; b <= 9; b++) {
+                            if (a / b === answer && a % b === 0) {
+                                equation = `${a} ÷ ${b} = ${answer}`;
+                                return { problem: equation, answer: `${a / b}` };
+                            }
+                        }
+                    }
+
+                    a = Math.floor(Math.random() * 9) + 1;
+                    b = Math.floor(Math.random() * 9) + 1;
+                    return { problem: `${a} × ${b}`, answer: `${a * b}` };
+                
+                case "5":
+                    answer = Math.floor(Math.random() * 50) + 71;
+                    x = Math.floor(Math.random() * 9) + 1;
+                    return { problem: `${x} x ${answer} = ?`, answer: `${x * answer}` };
+
+                default:
+                    break;
+            }
+        }
+
+        function addToSidebar(number) {
+            const equationsList = document.getElementById("equationsList");
+            const listItem = document.createElement("li");
+            listItem.textContent = `Number: ${number}`;
+            equationsList.appendChild(listItem);
+        }
+
+        function showAnswer() {
+            alert(`The answer is: ${currentAnswer}`);
+        }
+    </script>
+</body>
+</html>
